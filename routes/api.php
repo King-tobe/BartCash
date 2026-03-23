@@ -1,32 +1,23 @@
 <?php
 
+use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
-    
-    Route::get('health', function () {
-        return response()->json([
-            'success' => true,
-            'message' => 'Bartcash API is running',
-            'version' => 'v1',
-        ]);
-    });
 
-    // Authentication endpoints (Sprint 2)
     Route::prefix('auth')->group(function () {
-        // POST /register
-        // POST /verify-otp
-        // POST /resend-otp
-        // POST /login
-        // POST /refresh
-        // POST /logout
-        // POST /forgot-password
-        // POST /reset-password
+        Route::post('register', [AuthController::class, 'register']);
+        Route::post('verify-otp', [AuthController::class, 'verifyOtp']);
+Route::post('resend-otp', [AuthController::class, 'resendOtp']);
+Route::post('login', [AuthController::class, 'login']);
+Route::post('refresh', [AuthController::class, 'refresh']);
+  Route::post('forgot-password', [AuthController::class, 'forgotPassword']);
+Route::post('reset-password', [AuthController::class, 'resetPassword']);
     });
 
-    // Protected endpoints — requires valid JWT
-    Route::middleware('auth:sanctum')->group(function () {
-        // All authenticated endpoints go here
+    Route::middleware('auth:api')->group(function () {
+        // Authenticated endpoints go here
+         Route::post('auth/logout', [AuthController::class, 'logout']);
     });
 
 });
