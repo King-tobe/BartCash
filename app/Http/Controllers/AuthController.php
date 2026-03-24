@@ -297,7 +297,7 @@ public function refresh(RefreshTokenRequest $request)
         'id'         => Str::uuid(),
         'user_id'    => $user->id,
         'token'      => hash('sha256', $newPlainRefreshToken),
-        'expires_at' => now()->addDays(30),
+        'expires_at' => now()->addDays(5),
         'revoked'    => false,
         'ip_address' => $request->ip(),
         'user_agent' => $request->userAgent(),
