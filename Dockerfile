@@ -3,12 +3,23 @@ FROM php:8.2-cli
 RUN apt-get update && apt-get install -y \
     curl \
     libcurl4-openssl-dev \
+    libpq-dev \
+    libsodium-dev \
+    libzip-dev \
     unzip \
     git \
-    && docker-php-ext-install curl
+    && docker-php-ext-install \
+        curl \
+        pdo \
+        pdo_pgsql \
+        sodium \
+        bcmath \
+        mbstring \
+        zip \
+        pcntl \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-
 COPY . .
 
 RUN curl -sS https://getcomposer.org/installer | php
