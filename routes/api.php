@@ -5,6 +5,7 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ItemController;
 use App\Http\Controllers\MessageController;
 use App\Http\Controllers\TradeController;
+use App\Http\Controllers\RatingController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -67,4 +68,7 @@ Route::prefix('v1')->group(function () {
         Route::patch('trades/{id}/messages/read',    [MessageController::class, 'markRead']);
     });
 
+// Ratings
+        Route::post('ratings',              [RatingController::class, 'create']);
+        Route::get('users/{id}/ratings',    [RatingController::class, 'index']);
 });
