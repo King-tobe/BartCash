@@ -21,6 +21,12 @@ return [
     'resend' => [
         'key' => env('RESEND_API_KEY'),
     ],
+    
+    'groq' => [
+        'api_key'  => env('GROQ_API_KEY'),
+        'model'    => env('GROQ_MODEL', 'meta-llama/llama-4-scout-17b-16e-instruct'),
+        'base_url' => 'https://api.groq.com/openai/v1',
+    ],
 
     'ses' => [
         'key' => env('AWS_ACCESS_KEY_ID'),
