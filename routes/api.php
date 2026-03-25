@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ItemController;
+use App\Http\Controllers\MessageController;
 use App\Http\Controllers\TradeController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
@@ -60,6 +61,10 @@ Route::prefix('v1')->group(function () {
         Route::patch('trades/{id}/cancel',       [TradeController::class, 'cancel']);
         Route::patch('trades/{id}/complete',     [TradeController::class, 'complete']);
 
+// Messages — order matters: /messages/read must be before /messages/{id}
+        Route::get('trades/{id}/messages',           [MessageController::class, 'index']);
+        Route::post('trades/{id}/messages',          [MessageController::class, 'send']);
+        Route::patch('trades/{id}/messages/read',    [MessageController::class, 'markRead']);
     });
 
 });
