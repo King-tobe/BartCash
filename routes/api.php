@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ItemController;
+use App\Http\Controllers\TradeController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -33,10 +34,10 @@ Route::prefix('v1')->group(function () {
         Route::get('categories', [CategoryController::class, 'index']);
 
         // User
-        Route::get('user/profile',    [UserController::class, 'profile']);
-        Route::put('user/profile',    [UserController::class, 'updateProfile']);
-        Route::post('user/avatar',    [UserController::class, 'updateAvatar']);
-        Route::delete('user',         [UserController::class, 'deleteAccount']);
+        Route::get('user/profile',  [UserController::class, 'profile']);
+        Route::put('user/profile',  [UserController::class, 'updateProfile']);
+        Route::post('user/avatar',  [UserController::class, 'updateAvatar']);
+        Route::delete('user',       [UserController::class, 'deleteAccount']);
 
         // Items — order matters: /items/mine must be before /items/{id}
         Route::post('items',                      [ItemController::class, 'create']);
@@ -49,6 +50,15 @@ Route::prefix('v1')->group(function () {
         Route::post('items/{id}/images',          [ItemController::class, 'uploadImages']);
         Route::get('items/{id}/valuation',        [ItemController::class, 'valuation']);
         Route::post('items/{id}/valuation/retry', [ItemController::class, 'retryValuation']);
+
+        // Trades
+        Route::post('trades',                    [TradeController::class, 'create']);
+        Route::get('trades',                     [TradeController::class, 'index']);
+        Route::get('trades/{id}',                [TradeController::class, 'show']);
+        Route::patch('trades/{id}/accept',       [TradeController::class, 'accept']);
+        Route::patch('trades/{id}/decline',      [TradeController::class, 'decline']);
+        Route::patch('trades/{id}/cancel',       [TradeController::class, 'cancel']);
+        Route::patch('trades/{id}/complete',     [TradeController::class, 'complete']);
 
     });
 
