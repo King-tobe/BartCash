@@ -7,6 +7,7 @@ use App\Http\Controllers\ItemController;
 use App\Http\Controllers\MessageController;
 use App\Http\Controllers\RatingController;
 use App\Http\Controllers\TradeController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -75,6 +76,12 @@ Route::prefix('v1')->group(function () {
         // Disputes
         Route::post('disputes',       [DisputeController::class, 'create']);
         Route::get('disputes/{id}',   [DisputeController::class, 'show']);
+
+// Notification
+       Route::get('notifications',                  [NotificationController::class, 'index']);
+Route::patch('notifications/read-all',       [NotificationController::class, 'markAllAsRead']);
+Route::patch('notifications/{id}/read',      [NotificationController::class, 'markAsRead']);
+Route::delete('notifications/{id}',          [NotificationController::class, 'destroy']);     
 
     });
 
