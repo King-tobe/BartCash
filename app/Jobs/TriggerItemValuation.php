@@ -26,8 +26,8 @@ class TriggerItemValuation implements ShouldQueue
 
     public function handle(): void
     {
-        $item       = Item::with('images')->find($this->itemId);
-        $valuation  = ItemValuation::find($this->valuationId);
+        $item      = Item::with('images')->find($this->itemId);
+        $valuation = ItemValuation::find($this->valuationId);
 
         if (!$item || !$valuation) {
             Log::error('TriggerItemValuation: item or valuation not found', [
@@ -49,9 +49,9 @@ class TriggerItemValuation implements ShouldQueue
         }
 
         try {
-$imageBase64 = $this->fetchImageAsBase64($primaryImage->storage_path);
-            $prompt       = $this->buildPrompt($item);
-            $result       = $this->callGroq($prompt, $imageBase64);
+            $imageBase64 = $this->fetchImageAsBase64($primaryImage->storage_path);
+            $prompt      = $this->buildPrompt($item);
+            $result      = $this->callGroq($prompt, $imageBase64);
 
             $valuation->update([
                 'value_min'    => $result['value_min'],
@@ -79,39 +79,40 @@ $imageBase64 = $this->fetchImageAsBase64($primaryImage->storage_path);
         }
     }
 
-private function fetchImageAsBase64(string $storagePath): string
-{
-    $publicUrl = rtrim(config('filesystems.disks.r2.url'), '/') . '/' . ltrim($storagePath, '/');
+    private function fetchImageAsBase64(string $storagePath): string
+    {
+        $publicUrl = rtrim(config('filesystems.disks.r2.url'), '/') . '/' . ltrim($storagePath, '/');
 
-    $response = Http::timeout(15)->get($publicUrl);
+        $response = Http::timeout(15)->get($publicUrl);
 
-    if (!$response->successful()) {
-        throw new \Exception('Failed to fetch image for valuation: ' . $publicUrl);
+        if (!$response->successful()) {
+            throw new \Exception('Failed to fetch image for valuation: ' . $publicUrl);
+        }
+
+        return base64_encode($response->body());
     }
-
-    return base64_encode($response->body());
-}
 
     private function buildPrompt(Item $item): string
     {
         return implode(' ', [
-            'You are a fair market value estimator for a barter marketplace.',
+            'You are a fair market value estimator for a barter marketplace in Nigeria.',
             'Based on the provided image and item details, estimate the current',
             'fair market value of this item in USD.',
             'Item title: ' . $item->title . '.',
             'Condition: ' . $item->condition . '.',
             'Description: ' . $item->description . '.',
             'Respond ONLY with a valid JSON object in this exact format:',
-            '{"value_min": number, "value_max": number, "confidence": "low|medium|high"}',
+            '{"value_min": number, "value_max": number, "confidence": number}',
+            'where confidence is a number between 0 and 100 representing your certainty.',
             'Do not include any other text, explanation, or markdown.',
         ]);
     }
 
     private function callGroq(string $prompt, string $imageBase64): array
     {
-        $apiKey   = config('services.groq.api_key');
-        $model    = config('services.groq.model');
-        $baseUrl  = config('services.groq.base_url');
+        $apiKey  = config('services.groq.api_key');
+        $model   = config('services.groq.model');
+        $baseUrl = config('services.groq.base_url');
 
         $response = Http::timeout(30)
             ->withToken($apiKey)
@@ -153,13 +154,14 @@ private function fetchImageAsBase64(string $storagePath): string
 
     private function parseResponse(string $text, array $raw): array
     {
-        $text    = trim(preg_replace('/```json|```/', '', $text));
-        $parsed  = json_decode($text, true);
+        $text   = trim(preg_replace('/```json|```/', '', $text));
+        $parsed = json_decode($text, true);
 
         if (
             !isset($parsed['value_min'], $parsed['value_max'], $parsed['confidence']) ||
             !is_numeric($parsed['value_min']) ||
             !is_numeric($parsed['value_max']) ||
+            !is_numeric($parsed['confidence']) ||
             $parsed['value_min'] > $parsed['value_max']
         ) {
             throw new \Exception('Groq returned an unexpected format: ' . $text);
@@ -168,7 +170,7 @@ private function fetchImageAsBase64(string $storagePath): string
         return [
             'value_min'  => (float) $parsed['value_min'],
             'value_max'  => (float) $parsed['value_max'],
-            'confidence' => $parsed['confidence'],
+            'confidence' => (float) min(max($parsed['confidence'], 0), 100),
             'raw'        => $raw,
         ];
     }
