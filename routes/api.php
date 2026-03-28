@@ -54,6 +54,7 @@ Route::prefix('v1')->group(function () {
         Route::post('items/{id}/images',          [ItemController::class, 'uploadImages']);
         Route::get('items/{id}/valuation',        [ItemController::class, 'valuation']);
         Route::post('items/{id}/valuation/retry', [ItemController::class, 'retryValuation']);
+Route::patch('items/{id}/valuation/override', [ItemController::class, 'overrideValuation']);
 
         // Trades
         Route::post('trades',                    [TradeController::class, 'create']);
