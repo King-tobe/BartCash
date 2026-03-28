@@ -592,4 +592,60 @@ class ItemController extends Controller
             ],
         ]);
     }
+// -------------------------------------------------------------------------
+// PATCH /items/{id}/valuation/override
+// -------------------------------------------------------------------------
+public function overrideValuation(Request $request, string $id): JsonResponse
+{
+    $item = Item::find($id);
+
+    if (!$item) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Item not found.',
+        ], 404);
+    }
+
+    if ($item->user_id !== Auth::id()) {
+        return response()->json([
+            'success' => false,
+            'message' => 'You do not have permission to override this valuation.',
+        ], 403);
+    }
+
+    $validated = $request->validate([
+        'value_min' => ['required', 'numeric', 'min:0'],
+        'value_max' => ['required', 'numeric', 'gt:value_min'],
+    ]);
+
+    $valuation = ItemValuation::where('item_id', $id)->latest()->first();
+
+    if (!$valuation) {
+        return response()->json([
+            'success' => false,
+            'message' => 'No valuation record found for this item.',
+        ], 404);
+    }
+
+    $valuation->update([
+        'value_min'  => $validated['value_min'],
+        'value_max'  => $validated['value_max'],
+        'status'     => 'completed',
+        // Null out AI confidence — this is now a manual override
+        'confidence' => null,
+    ]);
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Valuation override saved.',
+        'data'    => [
+            'valuation' => [
+                'id'        => $valuation->id,
+                'value_min' => $valuation->value_min,
+                'value_max' => $valuation->value_max,
+                'status'    => $valuation->status,
+            ],
+        ],
+    ]);
+}
 }
