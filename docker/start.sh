@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# Migration Command
+php artisan migrate --force
+
 # Cache Laravel config
 php artisan config:cache
 php artisan route:cache
