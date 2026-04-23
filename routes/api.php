@@ -26,6 +26,23 @@ Route::prefix('v1')->group(function () {
         Route::post('reset-password',  [AuthController::class, 'resetPassword']);
     });
 
+// -------------------------------------------------------------------------
+// Temporary Debug Route — REMOVE AFTER DEBUGGING
+// -------------------------------------------------------------------------
+Route::get('/debug/r2', function () {
+    try {
+        \Storage::disk('r2')->put('test.txt', 'hello from render');
+        $url = \Storage::disk('r2')->url('test.txt');
+        return response()->json(['status' => 'success', 'url' => $url]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => 'error',
+            'message' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
+    }
+});
+
     // -------------------------------------------------------------------------
     // Protected Routes — Require valid JWT
     // -------------------------------------------------------------------------
