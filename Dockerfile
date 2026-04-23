@@ -11,7 +11,10 @@ RUN apk add --no-cache \
     postgresql-dev \
     libpng-dev \
     libjpeg-turbo-dev \
-    freetype-dev
+    freetype-dev \
+    libxml2-dev \
+    openssl-dev \
+    curl-dev
 
 # Install PHP extensions
 RUN docker-php-ext-install \
@@ -21,7 +24,8 @@ RUN docker-php-ext-install \
     exif \
     pcntl \
     bcmath \
-    gd
+    gd \
+    curl
 
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
