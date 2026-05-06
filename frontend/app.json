@@ -1,0 +1,44 @@
+{
+  "expo": {
+    "name": "BartCash",
+    "slug": "bartcash",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "bartcash",
+    "icon": "./assets/images/splash_icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/images/splash_icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FFFFFF"
+    },
+    "ios": {
+      "bundleIdentifier": "com.bartcash.app",
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.bartcash.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/splash_icon.png",
+        "backgroundColor": "#FFFFFF"
+      }
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#FFFFFF",
+          "image": "./assets/images/splash_icon.png",
+          "resizeMode": "contain"
+        }
+      ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "825accac-471a-4131-a23e-d4eedff3b8b9"
+      }
+    }
+  }
+}
