@@ -77,14 +77,13 @@ class MessageController extends Controller
     // -------------------------------------------------------------------------
     public function send(SendMessageRequest $request, string $tradeId): JsonResponse
     {
-        $trade  = Trade::find($tradeId);
+        $trade = Trade::findOrFail($tradeId);
         $userId = Auth::id();
-
-        if (!$trade) {
+    // Gate: locked till offer is accepted
+        if ($trade->status !== 'accepted') {
             return response()->json([
-                'success' => false,
-                'message' => 'Trade not found.',
-            ], 404);
+                'message' => 'Chat is locked until the offer is accepted.',
+            ], 403);
         }
 
         if ($trade->proposer_id !== $userId && $trade->receiver_id !== $userId) {
@@ -92,15 +91,6 @@ class MessageController extends Controller
                 'success' => false,
                 'message' => 'You are not a participant in this trade.',
             ], 403);
-        }
-
-        $allowedStatuses = ['pending', 'accepted'];
-
-        if (!in_array($trade->status, $allowedStatuses)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'This trade is closed. Messaging is disabled.',
-            ], 422);
         }
 
         $message = Message::create([

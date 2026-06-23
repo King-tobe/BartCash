@@ -261,7 +261,10 @@ class TradeController extends Controller
         $trade->update([
             'status'            => 'accepted',
             'completion_method' => $request->validated()['completion_method'],
+
         ]);
+
+        $trade->refresh();
 
         return response()->json([
             'success' => true,
