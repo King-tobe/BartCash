@@ -2,7 +2,7 @@
   "expo": {
     "name": "BartCash",
     "slug": "bartcash",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "scheme": "bartcash",
     "icon": "./assets/images/bartcash_logo_dark.png",
