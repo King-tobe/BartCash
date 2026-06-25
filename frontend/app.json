@@ -5,7 +5,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "scheme": "bartcash",
-    "icon": "./assets/images/splash_icon.png",
+    "icon": "./assets/images/bartcash_logo_dark.png",
     "userInterfaceStyle": "automatic",
     "splash": {
       "image": "./assets/images/splash_icon.png",
@@ -19,7 +19,7 @@
     "android": {
       "package": "com.bartcash.app",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/splash_icon.png",
+        "foregroundImage": "./assets/images/bartcash_logo_dark.png",
         "backgroundColor": "#FFFFFF"
       }
     },
