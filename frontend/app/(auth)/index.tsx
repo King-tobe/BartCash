@@ -33,15 +33,15 @@ export default function SplashScreenComponent() {
         }),
         Animated.timing(logoOpacity, {
           toValue: 1,
-          duration: 400,
+          duration: 800,
           easing: Easing.out(Easing.quad),
           useNativeDriver: true,
         }),
       ]),
       Animated.timing(taglineOpacity, {
         toValue: 1,
-        duration: 350,
-        delay: 100,
+        duration: 700,
+        delay: 200,
         easing: Easing.out(Easing.quad),
         useNativeDriver: true,
       }),
@@ -53,13 +53,13 @@ export default function SplashScreenComponent() {
         Animated.parallel([
           Animated.timing(ringScale, {
             toValue: 1.4,
-            duration: 1200,
+            duration: 2000,
             easing: Easing.out(Easing.quad),
             useNativeDriver: true,
           }),
           Animated.timing(ringOpacity, {
             toValue: 0,
-            duration: 1200,
+            duration: 2000,
             useNativeDriver: true,
           }),
         ]),
@@ -79,7 +79,7 @@ export default function SplashScreenComponent() {
     ).start();
 
     // Check session after animation has had time to show
-    const timer = setTimeout(checkSession, 1800);
+    const timer = setTimeout(checkSession, 3500);
     return () => clearTimeout(timer);
   }, []);
 

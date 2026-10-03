@@ -223,12 +223,21 @@ export default function CreateListingScreen() {
     } catch (err: any) {
       const status = err.response?.status;
       if (status === 400) {
-        const apiErrors = err.response?.data?.errors ?? {};
-        const mapped: Record<string, string> = {};
-        Object.entries(apiErrors).forEach(([field, messages]) => {
-          mapped[field] = (messages as string[])[0];
-        });
-        setErrors(mapped);
+        const apiErrors = err.response?.data?.errors;
+        if (apiErrors) {
+          const mapped: Record<string, string> = {};
+          Object.entries(apiErrors).forEach(([field, messages]) => {
+            mapped[field] = (messages as string[])[0];
+          });
+          setErrors(mapped);
+        } else {
+          Alert.alert(
+            "Upload failed",
+            err.response?.data?.description ??
+              err.response?.data?.message ??
+              "Please try again.",
+          );
+        }
       } else if (status === 404) {
         setErrors({ category: "Invalid category. Please try again." });
       } else {
@@ -636,7 +645,10 @@ export default function CreateListingScreen() {
           >
             {/* Description */}
             <Text style={[styles.fieldLabel, { color: theme.textPrimary }]}>
-              Description <Text style={{ color: Colors.danger }}>*</Text>
+              Description{" "}
+              <Text style={{ color: Colors.danger }}>
+                * ( must be minimum of 20 Characters )
+              </Text>
             </Text>
             <TextInput
               style={[
@@ -812,7 +824,9 @@ export default function CreateListingScreen() {
             <ActivityIndicator color={Colors.white} />
           ) : (
             <>
-              <Text style={styles.ctaBtnText}>Continue to AI Evaluation</Text>
+              <Text style={styles.ctaBtnText}>
+                Continue to Automated Evaluation
+              </Text>
               <Ionicons name="sparkles" size={16} color={Colors.white} />
             </>
           )}
@@ -1028,6 +1042,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: Spacing[2],
+    borderWidth: 1,
+    borderColor: Colors.white,
   },
   ctaBtnText: { ...Typography.button, color: Colors.white },
 });

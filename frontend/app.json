@@ -7,11 +7,6 @@
     "scheme": "bartcash",
     "icon": "./assets/images/bartcash_logo_dark.png",
     "userInterfaceStyle": "automatic",
-    "splash": {
-      "image": "./assets/images/splash_icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#FFFFFF"
-    },
     "ios": {
       "bundleIdentifier": "com.bartcash.app",
       "supportsTablet": true
@@ -32,7 +27,24 @@
           "image": "./assets/images/splash_icon.png",
           "resizeMode": "contain"
         }
-      ]
-    ]
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/notification-icon.png",
+          "color": "#ffffff"
+        }
+      ],
+      "expo-font",
+      "expo-web-browser",
+      "expo-image",
+      "expo-status-bar"
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "825accac-471a-4131-a23e-d4eedff3b8b9"
+      }
+    }
   }
 }
