@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   ActivityIndicator,
   Animated,
@@ -12,7 +18,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
@@ -30,6 +36,7 @@ import {
   getCategories,
   getMarketplaceItems,
 } from "@/config/items";
+import { getUnreadCount } from "@/config/notifications";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -53,17 +60,29 @@ function conditionLabel(condition: string): string {
   return map[condition] ?? condition;
 }
 
+function timeAgo(iso: string): string {
+  const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
+  if (s < 3600) return `${Math.max(1, Math.floor(s / 60))}m ago`;
+  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
+  return `${Math.floor(s / 86400)}d ago`;
+}
+
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 interface ListingCardProps {
   item: MarketplaceItem;
   onPress: () => void;
-  onOfferTrade: () => void;
 }
 
-function ListingCard({ item, onPress, onOfferTrade }: ListingCardProps) {
+function ListingCard({ item, onPress }: ListingCardProps) {
   const theme = useAuthTheme();
   const valuation = formatValuation(item);
+  const CONDITION_COLORS: Record<string, string> = {
+    new: Colors.success,
+    good: Colors.info,
+    fair: Colors.warning,
+    poor: Colors.danger,
+  };
 
   return (
     <TouchableOpacity
@@ -97,7 +116,7 @@ function ListingCard({ item, onPress, onOfferTrade }: ListingCardProps) {
             styles.conditionBadge,
             {
               backgroundColor:
-                item.condition === "new" ? Colors.success : Colors.gray[600],
+                CONDITION_COLORS[item.condition] ?? Colors.gray[600],
             },
           ]}
         >
@@ -105,11 +124,6 @@ function ListingCard({ item, onPress, onOfferTrade }: ListingCardProps) {
             {conditionLabel(item.condition)}
           </Text>
         </View>
-
-        {/* Favourite button */}
-        <TouchableOpacity style={styles.favouriteBtn} activeOpacity={0.8}>
-          <Ionicons name="heart-outline" size={18} color={Colors.white} />
-        </TouchableOpacity>
       </View>
 
       {/* Content */}
@@ -132,9 +146,33 @@ function ListingCard({ item, onPress, onOfferTrade }: ListingCardProps) {
         {item.valuation?.status === "pending" && (
           <View style={styles.valuationRow}>
             <ActivityIndicator size={10} color={Colors.ai} />
-            <Text style={[styles.aiLabel, { marginLeft: 4 }]}>Valuing...</Text>
+            <Text style={[styles.aiLabel, { marginLeft: 4 }]}>
+              Valuing pending...
+            </Text>
           </View>
         )}
+        {item.valuation?.status === "failed" && (
+          <Text style={styles.aiLabel}>Value estimate unavailable</Text>
+        )}
+
+        <View style={styles.ownerRow}>
+          {item.owner.profile_photo ? (
+            <Image
+              source={{ uri: item.owner.profile_photo }}
+              style={styles.ownerAvatar}
+            />
+          ) : (
+            <View
+              style={[
+                styles.ownerAvatar,
+                { backgroundColor: Colors.gray[200] },
+              ]}
+            />
+          )}
+          <Text style={styles.locationText} numberOfLines={1}>
+            {item.owner.first_name} · {timeAgo(item.created_at)}
+          </Text>
+        </View>
 
         {/* Location */}
         {item.location && (
@@ -149,22 +187,6 @@ function ListingCard({ item, onPress, onOfferTrade }: ListingCardProps) {
             </Text>
           </View>
         )}
-
-        {/* Offer Trade button */}
-        <TouchableOpacity
-          style={[styles.offerBtn, { borderColor: theme.borderDefault }]}
-          onPress={onOfferTrade}
-          activeOpacity={0.8}
-        >
-          <Text style={[styles.offerBtnText, { color: theme.textPrimary }]}>
-            Offer Trade
-          </Text>
-          <Ionicons
-            name="swap-horizontal"
-            size={13}
-            color={theme.textPrimary}
-          />
-        </TouchableOpacity>
       </View>
     </TouchableOpacity>
   );
@@ -219,6 +241,8 @@ export default function DashboardScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [unread, setUnread] = useState(0);
+  const lastFetchedAt = useRef(0);
 
   // Entrance animation
   const headerAnim = useRef(new Animated.Value(0)).current;
@@ -252,14 +276,17 @@ export default function DashboardScreen() {
     }
   }, []);
 
+  const requestId = useRef(0);
   const fetchItems = useCallback(
-    async (categoryId: string | null, cursor?: string) => {
+    async (categoryId: string | null, cursor?: string): Promise<boolean> => {
+      const myId = ++requestId.current;
       try {
         const params: Record<string, any> = { limit: 20 };
         if (categoryId) params.category_id = categoryId;
         if (cursor) params.cursor = cursor;
 
         const data = await getMarketplaceItems(params);
+        if (myId !== requestId.current) return false;
 
         if (cursor) {
           // Append for pagination
@@ -268,10 +295,15 @@ export default function DashboardScreen() {
           // Fresh load or filter change
           setItems(data.items);
         }
+        if (!cursor) lastFetchedAt.current = Date.now();
+
         setNextCursor(data.next_cursor);
         setError(null);
+        return true;
       } catch (err: any) {
+        if (myId !== requestId.current) return false;
         setError(err.response?.data?.message || "Failed to load listings.");
+        return true;
       }
     },
     [],
@@ -287,14 +319,26 @@ export default function DashboardScreen() {
     init();
   }, []);
 
+  useFocusEffect(
+    useCallback(() => {
+      getUnreadCount()
+        .then(setUnread)
+        .catch(() => {});
+      if (loading || Date.now() - lastFetchedAt.current < 30_000) return;
+      fetchItems(selectedCategory);
+    }, [loading, selectedCategory, fetchItems]),
+  );
+
   // Category filter change
   const handleCategorySelect = useCallback(
     async (categoryId: string | null) => {
       if (categoryId === selectedCategory) return;
       setSelectedCategory(categoryId);
       setLoading(true);
-      await fetchItems(categoryId);
-      setLoading(false);
+      setItems([]);
+      setNextCursor(null);
+      const applied = await fetchItems(categoryId);
+      if (applied) setLoading(false);
     },
     [selectedCategory, fetchItems],
   );
@@ -320,12 +364,7 @@ export default function DashboardScreen() {
     router.push(`/(support-pages)/listing/${itemId}`);
   }, []);
 
-  const handleOfferTrade = useCallback((item: MarketplaceItem) => {
-    router.push(`/(support-pages)/listing/${item.id}`);
-  }, []);
-
   // ── Render helpers ───────────────────────────────────────────────────────────
-
   const renderItem = useCallback(
     ({ item, index }: { item: MarketplaceItem; index: number }) => (
       <View
@@ -336,14 +375,10 @@ export default function DashboardScreen() {
             : { paddingLeft: Layout.gridGap / 2 },
         ]}
       >
-        <ListingCard
-          item={item}
-          onPress={() => handleListingPress(item.id)}
-          onOfferTrade={() => handleOfferTrade(item)}
-        />
+        <ListingCard item={item} onPress={() => handleListingPress(item.id)} />
       </View>
     ),
-    [handleListingPress, handleOfferTrade],
+    [handleListingPress],
   );
 
   const renderFooter = useCallback(() => {
@@ -356,7 +391,7 @@ export default function DashboardScreen() {
   }, [loadingMore]);
 
   const renderEmpty = useCallback(() => {
-    if (loading) return null;
+    if (loading || error) return null;
     return (
       <View style={styles.emptyState}>
         <Ionicons name="cube-outline" size={48} color={Colors.gray[300]} />
@@ -427,7 +462,7 @@ export default function DashboardScreen() {
 
   // ── Header component (rendered above the FlatList) ───────────────────────────
 
-  const ListHeader = useCallback(
+  const listHeader = useMemo(
     () => (
       <View>
         {/* Category chips */}
@@ -475,16 +510,6 @@ export default function DashboardScreen() {
             </TouchableOpacity>
           </View>
         )}
-
-        {/* Section label */}
-        <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>
-            {selectedCategory
-              ? (categories.find((c) => c.id === selectedCategory)?.name ??
-                "Listings")
-              : "Discover"}
-          </Text>
-        </View>
       </View>
     ),
     [
@@ -542,17 +567,13 @@ export default function DashboardScreen() {
                 size={Layout.iconMd}
                 color={theme.textPrimary}
               />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.iconBtn, { backgroundColor: theme.surface }]}
-              onPress={() => router.push("/(main-pages)/profile")}
-              activeOpacity={0.8}
-            >
-              <Ionicons
-                name="person-outline"
-                size={Layout.iconMd}
-                color={theme.textPrimary}
-              />
+              {unread > 0 && (
+                <View style={styles.bellBadge}>
+                  <Text style={styles.bellBadgeText}>
+                    {unread > 9 ? "9+" : unread}
+                  </Text>
+                </View>
+              )}
             </TouchableOpacity>
           </View>
         </View>
@@ -599,38 +620,28 @@ export default function DashboardScreen() {
           },
         ]}
       >
-        {loading ? (
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingHorizontal: Layout.screenPadding }}
-          >
-            <ListHeader />
-            {renderSkeletons()}
-          </ScrollView>
-        ) : (
-          <FlatList
-            data={items}
-            keyExtractor={(item) => item.id}
-            renderItem={renderItem}
-            numColumns={2}
-            ListHeaderComponent={<ListHeader />}
-            ListEmptyComponent={renderEmpty()}
-            ListFooterComponent={renderFooter()}
-            onEndReached={handleLoadMore}
-            onEndReachedThreshold={0.4}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={handleRefresh}
-                tintColor={Colors.primary}
-                colors={[Colors.primary]}
-              />
-            }
-            contentContainerStyle={styles.flatListContent}
-            showsVerticalScrollIndicator={false}
-            columnWrapperStyle={styles.columnWrapper}
-          />
-        )}
+        <FlatList
+          data={loading ? [] : items}
+          keyExtractor={(item) => item.id}
+          renderItem={renderItem}
+          numColumns={2}
+          ListHeaderComponent={listHeader}
+          ListEmptyComponent={loading ? renderSkeletons() : renderEmpty()}
+          ListFooterComponent={renderFooter()}
+          onEndReached={handleLoadMore}
+          onEndReachedThreshold={0.4}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={Colors.primary}
+              colors={[Colors.primary]}
+            />
+          }
+          contentContainerStyle={styles.flatListContent}
+          showsVerticalScrollIndicator={false}
+          columnWrapperStyle={styles.columnWrapper}
+        />
       </Animated.View>
     </View>
   );
@@ -858,6 +869,23 @@ const styles = StyleSheet.create({
     ...Typography.bodyMedium,
     color: Colors.info,
     textDecorationLine: "underline",
+  },
+  bellBadge: {
+    position: "absolute",
+    top: -2,
+    right: -2,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    paddingHorizontal: 3,
+    backgroundColor: Colors.danger,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  bellBadgeText: {
+    ...Typography.micro,
+    color: Colors.white,
+    fontWeight: "700",
   },
 
   // Footer loader
